@@ -19,7 +19,6 @@ except ImportError:
 
 from config import (
     LEVEL1_DURATION_SECONDS,
-    LEVEL2_DURATION_SECONDS,
     YAWN_ALERT_WINDOW_SECONDS,
     YAWN_ALERT_THRESHOLD,
     YAWN_RECENT_WINDOW_SECONDS
@@ -64,7 +63,7 @@ class AlertEngine:
     Alert Logic:
     - Level 1: Triggers when driver state indicates drowsiness symptoms
                (SLIGHTLY_DROWSY, DROWSY, VERY_DROWSY, INATTENTIVE)
-    - Level 2: Escalates only if Level 1 persists for LEVEL2_DURATION_SECONDS
+    - Level 2: Escalates when 3 Level 1 alerts occur within 30-second window
     """
     
     # States that indicate drowsiness symptoms (trigger Level 1)
@@ -77,6 +76,11 @@ class AlertEngine:
         self.level2_triggered = False
         self.level1_active = False
         self.level2_active = False
+        
+        # Level 1 alert frequency tracking (for Level 2 escalation)
+        self.level1_trigger_timestamps = []  # List of timestamps when Level 1 was triggered
+        self.level2_escalation_window = 30.0  # 30-second window for counting Level 1 occurrences
+        self.level2_trigger_count = 3  # Trigger Level 2 after 3 Level 1 alerts in window
         
         # Yawn-based alert tracking
         self.yawn_timestamps = []  # List of yawn timestamps for alert tracking
@@ -100,6 +104,9 @@ class AlertEngine:
     def process(self, state, timestamp, yawn_timestamps=None):
         """
         Process driver state and yawn timestamps, trigger appropriate alerts based on symptoms.
+        
+        Frequency-based Level 2 escalation:
+        - Level 2 triggers when 3 Level 1 alerts occur within 30-second window
         
         Args:
             state: Current driver state string (ALERT, SLIGHTLY_DROWSY, DROWSY, etc.)
@@ -154,28 +161,9 @@ class AlertEngine:
                         self.reset()
                         return  # Exit early, don't check for Level 2
             
-            # Trigger Level 2 ONLY if Level 1 persists AND trigger condition is STILL active
-            # This prevents escalation if yawn frequency drops or symptoms clear
-            if self.level1_active and self.level1_triggered_at is not None:
-                level1_elapsed = timestamp - self.level1_triggered_at
-                if level1_elapsed >= LEVEL2_DURATION_SECONDS and not self.level2_active:
-                    # Only escalate if:
-                    # 1. Drowsiness symptoms still present, OR
-                    # 2. Yawn frequency still high AND yawns CONTINUED after Level 1 (not just old ones)
-                    should_escalate = False
-                    if has_drowsiness_symptoms:
-                        # State-based symptoms persist → escalate
-                        should_escalate = True
-                    elif yawn_trigger:
-                        # Yawn frequency is still high - check if yawns continued after Level 1
-                        # CRITICAL: Must have yawns AFTER Level 1 was triggered (not just old ones)
-                        if self.yawns_since_level1 > 0:
-                            # New yawns occurred after Level 1 → escalate
-                            should_escalate = True
-                        # If no yawns since Level 1, don't escalate (old yawns in window don't count)
-                    
-                    if should_escalate:
-                        self.trigger_level2(timestamp)
+            # Check for Level 2 escalation: 3 Level 1 alerts within 30-second window
+            if self.level1_active and not self.level2_active:
+                self._check_and_trigger_level2(timestamp)
         else:
             # Reset if symptoms clear (driver becomes alert) AND no yawn trigger
             # This handles the case where yawn frequency drops below threshold
@@ -191,6 +179,34 @@ class AlertEngine:
                     # If so, reset it since yawn frequency dropped
                     if not has_drowsiness_symptoms:
                         self.reset()
+    
+    def _check_and_trigger_level2(self, timestamp):
+        """
+        Check if Level 2 should be triggered based on frequency of Level 1 alerts.
+        
+        Level 2 triggers when 3 Level 1 alerts occur within 30-second window.
+        
+        Args:
+            timestamp: Current timestamp
+        """
+        # Add current Level 1 trigger to tracking
+        if self.level1_triggered_at is not None:
+            self.level1_trigger_timestamps.append(self.level1_triggered_at)
+        
+        # Remove old triggers outside the 30-second window
+        window_start = timestamp - self.level2_escalation_window
+        self.level1_trigger_timestamps = [
+            ts for ts in self.level1_trigger_timestamps if ts >= window_start
+        ]
+        
+        # Count Level 1 triggers in the window
+        level1_count = len(self.level1_trigger_timestamps)
+        
+        print(f"[LEVEL 2 CHECK] {level1_count}/{self.level2_trigger_count} Level 1 alerts in {self.level2_escalation_window}s window")
+        
+        # Trigger Level 2 if threshold reached
+        if level1_count >= self.level2_trigger_count:
+            self.trigger_level2(timestamp)
     
     def _check_yawn_trigger(self, timestamp):
         """
@@ -360,9 +376,10 @@ class AlertEngine:
             self.level1_active = False
             self.level2_active = False
             self.stop_alert = True
-            # Clear yawn tracking when reset
+            # Clear tracking when reset
             self.yawn_timestamps = []
             self.yawns_since_level1 = 0
+            self.level1_trigger_timestamps = []  # Clear Level 1 trigger history
             print("[ALERT RESET] Driver alertness restored - symptoms cleared")
     
     def manual_reset(self):

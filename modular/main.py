@@ -18,7 +18,12 @@ Run with: python main.py
 
 import cv2
 import time
-from config import DRAW_FACE_MESH, YAWN_ALERT_WINDOW_SECONDS
+from config import (
+    DRAW_FACE_MESH, 
+    YAWN_ALERT_WINDOW_SECONDS,
+    SUPABASE_ENABLED,
+    SUPABASE_SNAPSHOT_INTERVAL_SECONDS
+)
 from camera_utils import open_camera
 from face_detector import FaceDetector
 from ear_detector import calculate_average_ear
@@ -29,6 +34,7 @@ from head_pose_estimator import HeadPoseEstimator
 from score_calculator import ScoreCalculator
 from visualizer import draw_overlay
 from alerter import AlertEngine
+from supabase_logger import SupabaseLogger
 
 
 def main():
@@ -56,6 +62,21 @@ def main():
     score_calculator = ScoreCalculator()
     alerter = AlertEngine()  # Two-level alert system
     
+    # Initialize Supabase logger (if enabled)
+    supabase_logger = None
+    if SUPABASE_ENABLED:
+        supabase_logger = SupabaseLogger()
+        if supabase_logger.is_initialized():
+            supabase_logger.start_session()
+    
+    # Session tracking for Supabase
+    last_snapshot_time = 0
+    last_state = None
+    last_alert_level = 0
+    session_scores = []
+    session_max_score = 0.0
+    level1_count = 0
+    level2_count = 0
     
     frame_count = 0
     start_time = time.time()
@@ -193,6 +214,53 @@ def main():
             level1_elapsed = alerter.get_level1_elapsed(now)
             yawn_frequency = alerter.get_yawn_frequency(now) if face_landmarks else 0.0
             
+            # Track session metrics for Supabase
+            if ear is not None:
+                session_scores.append(score)
+                session_max_score = max(session_max_score, score)
+            
+            # Log alert events to Supabase
+            if supabase_logger and supabase_logger.is_initialized():
+                # Log new alert triggers
+                if alert_level > last_alert_level:
+                    if alert_level == 1:
+                        level1_count += 1
+                        supabase_logger.log_alert(
+                            "LEVEL1", 1, state, score, perclos,
+                            trigger_reason="drowsiness symptoms or yawn frequency"
+                        )
+                    elif alert_level == 2:
+                        level2_count += 1
+                        supabase_logger.log_alert(
+                            "LEVEL2", 2, state, score, perclos,
+                            trigger_reason="persistent drowsiness - 3 Level 1 alerts in 30s"
+                        )
+                
+                # Log state changes
+                if last_state is not None and last_state != state:
+                    supabase_logger.log_state_change(last_state, state, score, perclos)
+                
+                # Log periodic snapshots (every N seconds)
+                if now - last_snapshot_time >= SUPABASE_SNAPSHOT_INTERVAL_SECONDS:
+                    supabase_logger.log_snapshot(
+                        state=state,
+                        score=score,
+                        ear=ear,
+                        perclos=perclos,
+                        blink_rate=blink_rate,
+                        yawn_count=yawn_count,
+                        alert_level=alert_level,
+                        yaw=yaw,
+                        pitch=pitch,
+                        roll=roll,
+                        looking=looking,
+                        yawn_frequency=yawn_frequency
+                    )
+                    last_snapshot_time = now
+                
+                last_state = state
+                last_alert_level = alert_level
+            
             # Get LAR for display
             lar_display = lar if face_landmarks and lar is not None else (
                 yawn_detector.get_current_lar() if face_landmarks else None
@@ -237,6 +305,18 @@ def main():
                 print("Alerts manually reset")
     
     finally:
+        # End Supabase session
+        if supabase_logger and supabase_logger.is_initialized():
+            avg_score = sum(session_scores) / len(session_scores) if session_scores else 0.0
+            total_alerts = level1_count + level2_count
+            supabase_logger.end_session(
+                avg_score=avg_score,
+                max_score=session_max_score,
+                alert_count=total_alerts,
+                level1_count=level1_count,
+                level2_count=level2_count
+            )
+        
         cap.release()
         cv2.destroyAllWindows()
         print("Shutdown complete.")

@@ -84,6 +84,13 @@ This is a modular version of the driver drowsiness detection system, organized i
     - Main detection loop
     - Frame processing and display
     - Alert system integration
+    - Supabase cloud logging integration
+
+13. **supabase_logger.py** - Supabase cloud integration
+    - `SupabaseLogger` class
+    - Logs periodic snapshots, alerts, and state changes
+    - Session management and summaries
+    - Efficient data logging strategy
 
 ## How to Run
 
@@ -147,12 +154,12 @@ The alert system is **symptom-based** (not just score-based), meaning it trigger
   - On-screen display: Shows "Yawn Freq: X.X/min (RISK_LEVEL)" with color coding
 
 ### Level 2 Alert (Emergency)
-- **Trigger**: Level 1 persists for `LEVEL2_DURATION_SECONDS` (default: 10 seconds) after Level 1 activation
+- **Trigger**: 3 Level 1 alerts occur within a 30-second window (frequency-based escalation)
 - **Behavior**:
   - Audio: Continuous emergency alarm (1000 Hz, every 0.5 seconds)
   - Visual: Red emergency indicator on screen
   - Console: Emergency message printed
-  - Indicates driver is unresponsive to Level 1 warnings
+  - Indicates driver is unresponsive to Level 1 warnings (persistent drowsiness)
 
 ### Alert Reset
 - **Automatic**: When driver state returns to `ALERT` (symptoms clear)

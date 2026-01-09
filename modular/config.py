@@ -61,7 +61,7 @@ DRAW_FACE_MESH = True  # Set to True to draw full face mesh, False for eye conto
 
 # Two-Level Alert System Configuration
 # Level 1: Triggers when drowsiness symptoms are detected (state-based)
-# Level 2: Escalates only if Level 1 persists for specified duration
+# Level 2: Escalates when 3 Level 1 alerts occur within 30-second window (frequency-based)
 
 # Level 1 Alert: Triggered when driver state indicates drowsiness symptoms
 # States that trigger Level 1: "SLIGHTLY_DROWSY", "DROWSY", "VERY_DROWSY", "INATTENTIVE"
@@ -75,9 +75,17 @@ LEVEL1_DURATION_SECONDS = 3  # Duration in seconds before Level 1 alert triggers
 YAWN_ALERT_WINDOW_SECONDS = 60  # Rolling 1-minute window for yawn frequency calculation
 YAWN_ALERT_THRESHOLD = 2  # Minimum yawns per minute to trigger Level 1 (≥2 yawns/min = unusual)
 
-# Level 2 Alert: Escalates if Level 1 persists
-LEVEL2_DURATION_SECONDS = 10  # Duration in seconds after Level 1 before Level 2 triggers
+# Level 2 Alert: Escalates based on frequency of Level 1 alerts (NEW LOGIC)
+# Level 2 triggers when 3 Level 1 alerts occur within the escalation window
+LEVEL2_ESCALATION_WINDOW_SECONDS = 30  # 30-second window for counting Level 1 occurrences
+LEVEL2_TRIGGER_COUNT = 3  # Number of Level 1 alerts in window to trigger Level 2
 
 # Yawn-based Level 2 escalation: Only escalate if yawns are RECENT (not just in rolling window)
 YAWN_RECENT_WINDOW_SECONDS = 20  # Check if yawns occurred in last 20 seconds for Level 2 escalation
+
+# Supabase Cloud Integration Configuration
+# Set these via environment variables: SUPABASE_URL and SUPABASE_KEY
+# Or pass them when initializing SupabaseLogger
+SUPABASE_ENABLED = True  # Set to False to disable cloud logging
+SUPABASE_SNAPSHOT_INTERVAL_SECONDS = 5  # Log snapshot every N seconds (reduces data volume)
 
