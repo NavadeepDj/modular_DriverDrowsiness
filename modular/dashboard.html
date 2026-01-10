@@ -77,9 +77,106 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .refresh-spin {
+            animation: refreshSpin 0.5s ease-in-out;
+        }
+        @keyframes refreshSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .update-flash {
+            animation: updateFlash 0.3s ease-out;
+        }
+        @keyframes updateFlash {
+            0% { background: rgba(6, 224, 206, 0.05); }
+            100% { background: transparent; }
+        }
+        
+        /* Light Theme Styles */
+        body.light-theme {
+            background: linear-gradient(-45deg, #f8f9fa, #e9ecef, #f8f9fa, #dee2e6);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            color: #1a1a1a;
+        }
+        body.light-theme .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        body.light-theme .glass-card:hover {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(6, 224, 206, 0.4);
+        }
+        body.light-theme header {
+            background: rgba(255, 255, 255, 0.8);
+            border-bottom-color: rgba(0, 0, 0, 0.1);
+        }
+        body.light-theme h2,
+        body.light-theme h3,
+        body.light-theme p,
+        body.light-theme span,
+        body.light-theme td,
+        body.light-theme th,
+        body.light-theme a,
+        body.light-theme button:not(.bg-primary) {
+            color: #1a1a1a;
+        }
+        body.light-theme [class*="text-white"] {
+            color: #1a1a1a !important;
+        }
+        body.light-theme [class*="text-white/40"],
+        body.light-theme [class*="text-white/50"],
+        body.light-theme [class*="text-white/60"],
+        body.light-theme [class*="text-white/70"] {
+            color: rgba(26, 26, 26, 0.6) !important;
+        }
+        body.light-theme [class*="text-white/20"],
+        body.light-theme [class*="text-white/30"] {
+            color: rgba(26, 26, 26, 0.4) !important;
+        }
+        body.light-theme [class*="bg-white/5"] {
+            background: rgba(0, 0, 0, 0.05) !important;
+        }
+        body.light-theme [class*="bg-white/10"] {
+            background: rgba(0, 0, 0, 0.1) !important;
+        }
+        body.light-theme [class*="bg-white/2"] {
+            background: rgba(0, 0, 0, 0.02) !important;
+        }
+        body.light-theme [class*="border-white/5"],
+        body.light-theme [class*="border-white/10"] {
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        body.light-theme [class*="divide-white/5"] {
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        body.light-theme table thead {
+            background: rgba(0, 0, 0, 0.03) !important;
+        }
+        body.light-theme [class*="hover:bg-white"]:hover {
+            background: rgba(0, 0, 0, 0.05) !important;
+        }
+        body.light-theme #themeToggle {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+        body.light-theme #themeToggle:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        body.light-theme #themeToggle .material-symbols-outlined {
+            color: #1a1a1a;
+        }
+        body.light-theme .session-avatar {
+            background: linear-gradient(to bottom right, #e5e7eb, #d1d5db) !important;
+            color: #1a1a1a !important;
+        }
+        body.light-theme .session-avatar [class*="text-white"] {
+            color: #1a1a1a !important;
+        }
     </style>
 </head>
-<body class="bg-animated font-display text-white min-h-screen">
+<body id="body" class="bg-animated font-display text-white min-h-screen">
     <div class="flex h-screen flex-col">
         <header class="flex items-center justify-between border-b border-white/5 bg-background-dark/50 backdrop-blur-md px-10 py-4 sticky top-0 z-50">
             <div class="flex items-center gap-6">
@@ -87,7 +184,7 @@
                     <div class="size-8 bg-primary/20 rounded-lg flex items-center justify-center border border-primary/30">
                         <span class="material-symbols-outlined text-primary">monitoring</span>
                     </div>
-                    <h2 class="text-white text-xl font-extrabold tracking-tight">Electrifex</h2>
+                    <h2 class="text-white text-xl font-extrabold tracking-tight">Electrifex Dashboard</h2>
                 </div>
                 <div class="h-6 w-px bg-white/10 mx-2"></div>
                 <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
@@ -100,8 +197,11 @@
                     <a class="text-primary text-sm font-semibold border-b-2 border-primary pb-1" href="dashboard.html">Overview</a>
                 </nav>
                 <div class="flex gap-3">
-                    <button onclick="loadDashboard()" class="flex min-w-[100px] cursor-pointer items-center justify-center rounded-xl h-10 px-4 bg-primary text-background-dark text-sm font-bold transition-all hover:opacity-90 active:scale-95">
-                        <span class="material-symbols-outlined mr-2 text-lg">refresh</span>
+                    <button onclick="toggleTheme()" id="themeToggle" class="flex items-center justify-center rounded-xl h-10 w-10 bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95" title="Toggle theme">
+                        <span class="material-symbols-outlined text-lg" id="themeIcon">dark_mode</span>
+                    </button>
+                    <button onclick="manualRefresh()" class="flex min-w-[100px] cursor-pointer items-center justify-center rounded-xl h-10 px-4 bg-primary text-background-dark text-sm font-bold hover:opacity-90 active:scale-95" style="position: relative;">
+                        <span class="material-symbols-outlined mr-2 text-lg" id="refreshIcon">refresh</span>
                         <span>Refresh</span>
                     </button>
                 </div>
@@ -315,8 +415,17 @@
                     <!-- Recent Alerts -->
                     <div class="glass-card rounded-2xl p-6 flex-1 flex flex-col">
                         <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-lg font-bold">Recent Alerts</h2>
-                            <span id="newAlertsBadge" class="size-6 bg-danger/10 text-danger rounded flex items-center justify-center text-[10px] font-bold border border-danger/20" style="display: none;">0</span>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-lg font-bold">Recent Alerts</h2>
+                                <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                                    <div class="size-1.5 rounded-full bg-primary pulse-live"></div>
+                                    <span class="text-[9px] font-bold text-primary uppercase tracking-wider">LIVE</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="lastUpdateTime" class="text-[9px] text-white/40 font-mono"></span>
+                                <span id="newAlertsBadge" class="size-6 bg-danger/10 text-danger rounded flex items-center justify-center text-[10px] font-bold border border-danger/20" style="display: none;">0</span>
+                            </div>
                         </div>
                         <div id="recentAlerts" class="flex flex-col gap-4">
                         </div>
@@ -329,6 +438,36 @@
 
     <script>
         let supabaseClient = null;
+        
+        // Theme Management
+        function initTheme() {
+            const savedTheme = localStorage.getItem('dashboardTheme') || 'dark';
+            applyTheme(savedTheme);
+        }
+        
+        function toggleTheme() {
+            const body = document.getElementById('body');
+            const currentTheme = body.classList.contains('light-theme') ? 'light' : 'dark';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+            localStorage.setItem('dashboardTheme', newTheme);
+        }
+        
+        function applyTheme(theme) {
+            const body = document.getElementById('body');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (theme === 'light') {
+                body.classList.remove('bg-animated');
+                body.classList.add('light-theme');
+                themeIcon.textContent = 'light_mode';
+            } else {
+                body.classList.remove('light-theme');
+                body.classList.add('bg-animated');
+                themeIcon.textContent = 'dark_mode';
+            }
+        }
+        
         // Constants
         const EMPTY_STATES = {
             NO_SESSIONS: '<tr><td colspan="5" class="px-6 py-8 text-center text-white/40">No sessions found</td></tr>',
@@ -350,9 +489,10 @@
         const TIME_INTERVALS = {
             HOUR_MS: 3600000,
             DAY_MS: 24 * 3600000,
-            REFRESH_MS: 30000
+            REFRESH_MS: 2000  // 2 seconds for streaming updates
         };
 
+        
         let previousStats = {
             totalSessions: 0,
             activeSessions: 0,
@@ -365,9 +505,13 @@
         };
         let refreshInterval = null;
         let previousAlerts = [];
+        let isStreamingMode = false;  // Track if we're in streaming update mode
 
         // Load from config.js (generated from .env) or localStorage
         window.addEventListener('DOMContentLoaded', () => {
+            // Initialize theme first
+            initTheme();
+            
             let url = null;
             let key = null;
             
@@ -422,15 +566,33 @@
             }
         }
 
-        async function loadDashboard() {
+        // Manual refresh - always uses streaming mode (no full page refresh)
+        function manualRefresh() {
+            const dashboard = document.getElementById('dashboard');
+            const isVisible = dashboard && dashboard.style.display !== 'none';
+            // Always use streaming mode if dashboard is visible, otherwise initial load
+            if (isVisible) {
+                loadDashboard(true);  // Force streaming mode
+            } else {
+                loadDashboard(false);  // Initial load
+            }
+        }
+
+        async function loadDashboard(isStreaming = false) {
             if (!supabaseClient) {
                 showError('Please connect to Supabase first');
                 return;
             }
 
-            document.getElementById('loading').style.display = 'flex';
-            document.getElementById('dashboard').style.display = 'none';
-            document.getElementById('error').style.display = 'none';
+            // Set global streaming mode flag
+            isStreamingMode = isStreaming;
+
+            // Only show loading screen on initial load, not during streaming updates
+            if (!isStreaming) {
+                document.getElementById('loading').style.display = 'flex';
+                document.getElementById('dashboard').style.display = 'none';
+                document.getElementById('error').style.display = 'none';
+            }
 
             try {
                 const [sessions, alerts, snapshots] = await Promise.all([
@@ -439,22 +601,35 @@
                     loadSnapshots()
                 ]);
 
-                // Update all sections with staggered animations
-                updateStats(sessions, alerts, snapshots);
-                setTimeout(() => updateSessionsTable(sessions), 200);
-                setTimeout(() => updateRecentAlerts(alerts), 300);
-                setTimeout(() => updateStateChart(snapshots), 400);
+                // Update all sections - faster updates for streaming mode
+                if (isStreaming) {
+                    // Streaming mode: update immediately without delays
+                    updateStats(sessions, alerts, snapshots);
+                    updateSessionsTable(sessions);
+                    updateRecentAlerts(alerts);
+                    updateStateChart(snapshots);
+                } else {
+                    // Initial load: use staggered animations
+                    updateStats(sessions, alerts, snapshots);
+                    setTimeout(() => updateSessionsTable(sessions), 200);
+                    setTimeout(() => updateRecentAlerts(alerts), 300);
+                    setTimeout(() => updateStateChart(snapshots), 400);
+                }
 
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-                
-                // Start auto-refresh if not already started
-                if (!refreshInterval) {
-                    setTimeout(() => startAutoRefresh(), 2000);
+                if (!isStreaming) {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'block';
+                    
+                    // Start auto-refresh if not already started
+                    if (!refreshInterval) {
+                        setTimeout(() => startAutoRefresh(), 2000);
+                    }
                 }
             } catch (error) {
                 showError('Error loading dashboard: ' + error.message);
-                document.getElementById('loading').style.display = 'none';
+                if (!isStreaming) {
+                    document.getElementById('loading').style.display = 'none';
+                }
             }
         }
 
@@ -492,7 +667,7 @@
         }
 
         // Animate number with trend indicator
-        function animateNumberWithTrend(elementId, newValue, changeElementId, previousValue, format = 'number') {
+        function animateNumberWithTrend(elementId, newValue, changeElementId, previousValue, format = 'number', isStreaming = false) {
             const element = document.getElementById(elementId);
             const changeElement = document.getElementById(changeElementId);
             const startValue = parseFloat(element.textContent.replace(/[^0-9.]/g, '')) || previousValue || 0;
@@ -501,8 +676,8 @@
             const change = newValue - startValue;
             const changePercent = startValue > 0 ? ((change / startValue) * 100) : 0;
             
-            // Update trend indicator
-            if (changeElement && Math.abs(change) > 0.1) {
+            // Update trend indicator (only show significant changes in streaming mode)
+            if (changeElement && Math.abs(change) > (isStreaming ? 1 : 0.1)) {
                 const isPositive = change > 0;
                 const changeClass = isPositive ? 'text-safe' : 'text-danger';
                 const changeSymbol = isPositive ? '+' : '';
@@ -514,15 +689,19 @@
                 changeElement.style.display = 'none';
             }
             
-            // Animate number
-            animateValue(element, startValue, newValue, 800, format);
+            // Animate number with streaming mode support
+            animateValue(element, startValue, newValue, 800, format, isStreaming);
             
             // Update previous value
             previousStats[elementId] = newValue;
         }
 
-        // Enhanced animate value function
-        function animateValue(element, start, end, duration = 800, format = 'number') {
+        // Enhanced animate value function with streaming mode support
+        function animateValue(element, start, end, duration = 800, format = 'number', isStreaming = false) {
+            // Use faster animations for streaming updates
+            if (isStreaming && duration > 300) {
+                duration = 300;
+            }
             const startTime = performance.now();
             const isNumber = typeof end === 'number';
             
@@ -565,15 +744,19 @@
         function updateStats(sessions, alerts, snapshots) {
             // Total Sessions
             const totalSessions = sessions.length;
-            animateNumberWithTrend('totalSessions', totalSessions, 'totalSessionsChange', previousStats.totalSessions, 'number');
+            animateNumberWithTrend('totalSessions', totalSessions, 'totalSessionsChange', previousStats.totalSessions, 'number', isStreamingMode);
             const totalPercent = Math.min((totalSessions / 100) * 100, 100);
-            setTimeout(() => {
+            if (isStreamingMode) {
                 document.getElementById('totalSessionsBar').style.width = totalPercent + '%';
-            }, 100);
+            } else {
+                setTimeout(() => {
+                    document.getElementById('totalSessionsBar').style.width = totalPercent + '%';
+                }, 100);
+            }
 
             // Active Sessions
             const active = sessions.filter(s => s.status === 'active').length;
-            animateNumberWithTrend('activeSessions', active, 'activeSessionsChange', previousStats.activeSessions, 'number');
+            animateNumberWithTrend('activeSessions', active, 'activeSessionsChange', previousStats.activeSessions, 'number', isStreamingMode);
             
             // Update active indicators dynamically
             const indicators = document.getElementById('activeSessionsIndicators');
@@ -592,20 +775,28 @@
             const last24h = new Date(Date.now() - TIME_INTERVALS.DAY_MS);
             const recentAlerts = alerts.filter(a => new Date(a.timestamp) >= last24h);
             const alertCount = recentAlerts.length;
-            animateNumberWithTrend('totalAlerts', alertCount, 'totalAlertsChange', previousStats.totalAlerts, 'number');
+            animateNumberWithTrend('totalAlerts', alertCount, 'totalAlertsChange', previousStats.totalAlerts, 'number', isStreamingMode);
             const alertsPercent = Math.min((alertCount / 200) * 100, 100);
-            setTimeout(() => {
+            if (isStreamingMode) {
                 document.getElementById('totalAlertsBar').style.width = alertsPercent + '%';
-            }, 100);
+            } else {
+                setTimeout(() => {
+                    document.getElementById('totalAlertsBar').style.width = alertsPercent + '%';
+                }, 100);
+            }
 
             // Average Drowsiness
             const completedSessions = sessions.filter(s => s.status === 'completed' && s.avg_drowsiness_score);
             if (completedSessions.length > 0) {
                 const avg = completedSessions.reduce((sum, s) => sum + parseFloat(s.avg_drowsiness_score || 0), 0) / completedSessions.length;
-                animateNumberWithTrend('avgDrowsiness', avg, 'avgDrowsinessChange', previousStats.avgDrowsiness, 'percent');
-                setTimeout(() => {
+                animateNumberWithTrend('avgDrowsiness', avg, 'avgDrowsinessChange', previousStats.avgDrowsiness, 'percent', isStreamingMode);
+                if (isStreamingMode) {
                     document.getElementById('avgDrowsinessBar').style.width = Math.min(avg, 100) + '%';
-                }, 100);
+                } else {
+                    setTimeout(() => {
+                        document.getElementById('avgDrowsinessBar').style.width = Math.min(avg, 100) + '%';
+                    }, 100);
+                }
             } else {
                 document.getElementById('avgDrowsiness').textContent = DEFAULT_VALUES.PERCENT;
                 document.getElementById('avgDrowsinessBar').style.width = DEFAULT_VALUES.ZERO_WIDTH;
@@ -618,27 +809,32 @@
             
             // Animate Level 1 with trend
             const prevLevel1 = previousStats.level1Alerts || 0;
-            animateNumberWithTrend('level1Alerts', level1, 'level1Change', prevLevel1, 'number');
+            animateNumberWithTrend('level1Alerts', level1, 'level1Change', prevLevel1, 'number', isStreamingMode);
             previousStats.level1Alerts = level1;
             
             // Animate Level 2 with trend
             const prevLevel2 = previousStats.level2Alerts || 0;
-            animateNumberWithTrend('level2Alerts', level2, 'level2Change', prevLevel2, 'number');
+            animateNumberWithTrend('level2Alerts', level2, 'level2Change', prevLevel2, 'number', isStreamingMode);
             previousStats.level2Alerts = level2;
             
             // Update total breakdown alerts
             animateValue(document.getElementById('totalBreakdownAlerts'), 
                 parseFloat(document.getElementById('totalBreakdownAlerts').textContent) || 0, 
-                totalAlertCount, 600, 'number');
+                totalAlertCount, 600, 'number', isStreamingMode);
             
             // Animate progress bars
             if (totalAlertCount > 0) {
                 const level1Percent = (level1 / totalAlertCount) * 100;
                 const level2Percent = (level2 / totalAlertCount) * 100;
-                setTimeout(() => {
+                if (isStreamingMode) {
                     document.getElementById('level1Bar').style.width = level1Percent + '%';
                     document.getElementById('level2Bar').style.width = level2Percent + '%';
-                }, 100);
+                } else {
+                    setTimeout(() => {
+                        document.getElementById('level1Bar').style.width = level1Percent + '%';
+                        document.getElementById('level2Bar').style.width = level2Percent + '%';
+                    }, 100);
+                }
             } else {
                 document.getElementById('level1Bar').style.width = DEFAULT_VALUES.ZERO_WIDTH;
                 document.getElementById('level2Bar').style.width = DEFAULT_VALUES.ZERO_WIDTH;
@@ -647,7 +843,7 @@
             // Performance Metrics - Enhanced with trends
             const maxScore = Math.max(...sessions.map(s => parseFloat(s.max_drowsiness_score || 0)), 0);
             const prevMaxScore = previousStats.maxScore || 0;
-            animateNumberWithTrend('maxScore', maxScore, 'maxScoreChange', prevMaxScore, 'number');
+            animateNumberWithTrend('maxScore', maxScore, 'maxScoreChange', prevMaxScore, 'number', isStreamingMode);
             previousStats.maxScore = maxScore;
             
             const durations = completedSessions.map(s => parseFloat(s.duration_seconds || 0));
@@ -657,7 +853,7 @@
                 const change = avgDur - prevAvgDur;
                 
                 // Animate duration value
-                animateValue(document.getElementById('avgDuration'), prevAvgDur, avgDur, 800, 'decimal');
+                animateValue(document.getElementById('avgDuration'), prevAvgDur, avgDur, 800, 'decimal', isStreamingMode);
                 
                 // Show trend indicator
                 const changeElement = document.getElementById('avgDurationChange');
@@ -714,11 +910,12 @@
                 const isActive = session.status === 'active';
                 const activeIndicator = isActive ? '<div class="size-2 rounded-full bg-primary pulse-live absolute -top-1 -right-1"></div>' : '';
                 
+                const animationStyle = isStreamingMode ? '' : `style="animation: fadeIn 0.3s ease ${index * 0.05}s both"`;
                 return `
-                    <tr class="hover:bg-white/[0.02] transition-colors group ${isActive ? 'bg-primary/5' : ''}" style="animation: fadeIn 0.3s ease ${index * 0.05}s both">
+                    <tr class="hover:bg-white/[0.02] transition-colors group ${isActive ? 'bg-primary/5' : ''}" ${animationStyle}>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
-                                <div class="size-8 rounded-lg bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-[10px] font-bold text-white/80 relative">
+                                <div class="session-avatar size-8 rounded-lg bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-[10px] font-bold text-white/80 relative">
                                     ${initials}
                                     ${activeIndicator}
                                 </div>
@@ -745,6 +942,23 @@
 
         function updateRecentAlerts(alerts) {
             const container = document.getElementById('recentAlerts');
+            const lastUpdateTimeEl = document.getElementById('lastUpdateTime');
+            
+            // Add flash animation in streaming mode
+            if (isStreamingMode && container) {
+                container.classList.add('update-flash');
+                setTimeout(() => {
+                    container.classList.remove('update-flash');
+                }, 300);
+            }
+            
+            // Update last update timestamp
+            if (lastUpdateTimeEl) {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                lastUpdateTimeEl.textContent = timeStr;
+            }
+            
             const last24h = new Date(Date.now() - TIME_INTERVALS.DAY_MS);
             const recent = alerts.filter(a => new Date(a.timestamp) >= last24h);
             const oneHourAgo = new Date(Date.now() - TIME_INTERVALS.HOUR_MS);
@@ -796,8 +1010,9 @@
                     relativeTime = `${Math.floor(secondsAgo / 3600)}h ago`;
                 }
                 
+                const alertAnimationStyle = isStreamingMode ? '' : `style="animation: fadeIn 0.4s ease ${index * 0.1}s both"`;
                 return `
-                    <div class="p-4 rounded-xl bg-white/5 border-l-4 ${borderClass} hover:bg-white/10 transition-all cursor-pointer group ${isNew ? 'animate-pulse border-l-8' : ''}" style="animation: fadeIn 0.4s ease ${index * 0.1}s both">
+                    <div class="p-4 rounded-xl bg-white/5 border-l-4 ${borderClass} hover:bg-white/10 transition-all cursor-pointer group ${isNew ? 'animate-pulse border-l-8' : ''}" ${alertAnimationStyle}>
                         <div class="flex justify-between items-start mb-2">
                             <div class="flex items-center gap-2">
                                 <span class="text-[10px] font-bold ${bgClass} ${textClass} px-1.5 py-0.5 rounded border ${borderBadgeClass}">${levelText}</span>
@@ -970,21 +1185,26 @@
             }
         }
 
-        // Auto-refresh every 30 seconds with visual feedback
+        // Auto-refresh every 2 seconds with streaming updates (no page reload)
         function startAutoRefresh() {
             if (refreshInterval) clearInterval(refreshInterval);
             refreshInterval = setInterval(() => {
                 if (supabaseClient) {
-                    // Visual feedback on refresh button
-                    const refreshBtn = document.querySelector('button[onclick="loadDashboard()"]');
-                    if (refreshBtn) {
-                        refreshBtn.style.transition = 'transform 0.5s ease';
-                        refreshBtn.style.transform = 'rotate(180deg)';
+                    // Visual feedback on refresh icon only - keeps button position stable
+                    const refreshIcon = document.getElementById('refreshIcon');
+                    if (refreshIcon) {
+                        // Remove any existing inline styles to prevent layout shifts
+                        refreshIcon.style.transform = '';
+                        refreshIcon.style.transition = '';
+                        // Add animation class to icon only
+                        refreshIcon.classList.add('refresh-spin');
+                        // Remove class after animation completes
                         setTimeout(() => {
-                            refreshBtn.style.transform = 'rotate(0deg)';
+                            refreshIcon.classList.remove('refresh-spin');
                         }, 500);
                     }
-                    loadDashboard();
+                    // Use streaming mode - updates data without hiding dashboard
+                    loadDashboard(true);
                 }
             }, TIME_INTERVALS.REFRESH_MS);
         }
